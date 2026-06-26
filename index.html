@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>繰り返す面倒なExcel作業、自動化します | カスミ Excel VBA 講師</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#142840;
+    --navy-deep:#0b1826;
+    --cream:#FAF6EE;
+    --paper:#FFFFFF;
+    --green:#0E9E6D;
+    --green-deep:#0A7A55;
+    --amber:#E8A33D;
+    --ink:#1E2630;
+    --ink-soft:#5B6470;
+    --line:#E3DDCC;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:'Noto Sans JP',sans-serif;
+    background:var(--cream);
+    color:var(--ink);
+    line-height:1.8;
+    overflow-x:hidden;
+  }
+  h1,h2,h3,.mono{font-family:'Zen Kaku Gothic New',sans-serif;}
+  .mono-num{font-family:'Roboto Mono',monospace;}
+  img{max-width:100%;display:block;}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px;}
+  a{color:inherit;text-decoration:none;}
+
+  /* ===== Reduced motion ===== */
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.01ms !important; transition-duration:0.01ms !important;}
+  }
+
+  /* ===== Header ===== */
+  .topbar{
+    position:fixed; top:0; left:0; right:0; z-index:100;
+    background:rgba(20,40,64,0.92);
+    backdrop-filter:blur(6px);
+    border-bottom:1px solid rgba(255,255,255,0.08);
+  }
+  .topbar-inner{
+    max-width:1080px; margin:0 auto; padding:14px 24px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .brand{color:#fff; font-weight:700; font-size:15px; letter-spacing:0.02em;}
+  .brand span{color:var(--green);}
+  .topbar-cta{
+    background:var(--green); color:#fff; font-weight:700; font-size:13px;
+    padding:9px 18px; border-radius:99px; white-space:nowrap;
+  }
+
+  /* ===== Hero ===== */
+  .hero{
+    position:relative;
+    background:linear-gradient(165deg, var(--navy) 0%, var(--navy-deep) 75%);
+    color:#fff;
+    padding:120px 24px 90px;
+    overflow:hidden;
+  }
+  .hero::before{
+    content:"";
+    position:absolute; inset:0;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.045) 0px, rgba(255,255,255,0.045) 1px, transparent 1px, transparent 38px),
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.045) 0px, rgba(255,255,255,0.045) 1px, transparent 1px, transparent 76px);
+    mask-image:linear-gradient(180deg, rgba(0,0,0,0.9) 0%, transparent 75%);
+  }
+  .hero-grain{position:absolute; inset:0; opacity:0.5; pointer-events:none;}
+  .hero-content{position:relative; max-width:760px; margin:0 auto; text-align:center;}
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:8px;
+    font-size:12.5px; font-weight:700; letter-spacing:0.12em;
+    color:var(--green); background:rgba(14,158,109,0.12);
+    border:1px solid rgba(14,158,109,0.4);
+    padding:7px 16px; border-radius:99px; margin-bottom:28px;
+  }
+  .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--green); box-shadow:0 0 10px var(--green);}
+  .hero h1{
+    font-size:clamp(30px, 5vw, 50px);
+    font-weight:900; line-height:1.35; letter-spacing:-0.01em;
+    margin-bottom:22px;
+  }
+  .hero h1 .accent{color:var(--green);}
+  .hero p.lead{
+    font-size:16px; color:rgba(255,255,255,0.72); max-width:520px; margin:0 auto 38px;
+  }
+  .hero-stats{
+    display:flex; justify-content:center; gap:clamp(20px,5vw,52px); flex-wrap:wrap;
+    margin-bottom:44px;
+  }
+  .hstat{text-align:center;}
+  .hstat .num{font-size:clamp(28px,4vw,38px); font-weight:900; color:#fff;}
+  .hstat .num .unit{font-size:15px; font-weight:700; color:var(--green); margin-left:2px;}
+  .hstat .label{font-size:12px; color:rgba(255,255,255,0.55); margin-top:2px; letter-spacing:0.03em;}
+  .hero-ctas{display:flex; gap:14px; justify-content:center; flex-wrap:wrap;}
+  .btn{
+    display:inline-flex; align-items:center; gap:8px;
+    font-weight:700; font-size:15px; padding:15px 30px; border-radius:10px;
+    transition:transform 0.18s ease, box-shadow 0.18s ease;
+  }
+  .btn-primary{background:var(--green); color:#fff; box-shadow:0 10px 30px -8px rgba(14,158,109,0.6);}
+  .btn-primary:hover{transform:translateY(-2px); box-shadow:0 14px 34px -8px rgba(14,158,109,0.75);}
+  .btn-ghost{background:rgba(255,255,255,0.08); color:#fff; border:1px solid rgba(255,255,255,0.25);}
+  .btn-ghost:hover{background:rgba(255,255,255,0.14);}
+
+  /* ===== Signature: Loop-to-click section ===== */
+  .loop-section{
+    background:var(--paper);
+    padding:96px 24px;
+    border-bottom:1px solid var(--line);
+  }
+  .section-head{text-align:center; max-width:640px; margin:0 auto 56px;}
+  .section-tag{
+    font-size:12px; font-weight:700; letter-spacing:0.14em; color:var(--green-deep);
+    margin-bottom:12px; text-transform:uppercase;
+  }
+  .section-head h2{font-size:clamp(24px,3.4vw,32px); font-weight:900; color:var(--navy); line-height:1.5;}
+  .section-head p{color:var(--ink-soft); font-size:14.5px; margin-top:14px;}
+
+  .loop-stage{
+    max-width:920px; margin:0 auto;
+    display:flex; align-items:center; justify-content:center; gap:0;
+    flex-wrap:wrap;
+  }
+  .loop-before{
+    flex:1 1 320px; min-width:280px;
+    background:var(--cream);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:28px;
+  }
+  .loop-before .tag{font-size:11px; font-weight:700; color:#A85A2E; letter-spacing:0.08em; margin-bottom:14px;}
+  .repeat-row{
+    display:flex; align-items:center; gap:10px;
+    font-size:13.5px; color:var(--ink-soft);
+    padding:9px 0; border-bottom:1px dashed var(--line);
+  }
+  .repeat-row:last-child{border-bottom:none;}
+  .repeat-row .ricon{
+    width:22px;height:22px;flex:none;border-radius:5px;
+    background:#EFE6D3; display:flex;align-items:center;justify-content:center;
+    font-size:11px; color:#A85A2E; font-weight:700;
+  }
+  .repeat-row.fading{opacity:0.45;}
+
+  .loop-arrow{
+    flex:0 0 90px; display:flex; align-items:center; justify-content:center;
+    color:var(--green); padding:0 6px;
+  }
+  .loop-arrow svg{width:48px;height:48px;}
+
+  .loop-after{
+    flex:1 1 280px; min-width:240px;
+    background:var(--navy);
+    border-radius:16px;
+    padding:36px 28px;
+    text-align:center;
+    color:#fff;
+    position:relative;
+    overflow:hidden;
+  }
+  .loop-after .tag{font-size:11px; font-weight:700; color:var(--green); letter-spacing:0.08em; margin-bottom:18px;}
+  .click-button{
+    width:84px;height:84px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, var(--green) 0%, var(--green-deep) 100%);
+    margin:0 auto 18px;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 0 0 0 rgba(14,158,109,0.5);
+    animation:pulse-ring 2.6s ease-out infinite;
+  }
+  .click-button svg{width:34px;height:34px;fill:#fff;}
+  @keyframes pulse-ring{
+    0%{box-shadow:0 0 0 0 rgba(14,158,109,0.55);}
+    70%{box-shadow:0 0 0 18px rgba(14,158,109,0);}
+    100%{box-shadow:0 0 0 0 rgba(14,158,109,0);}
+  }
+  .loop-after .result-text{font-size:14px; font-weight:700;}
+  .loop-after .result-sub{font-size:12px; color:rgba(255,255,255,0.55); margin-top:6px;}
+
+  /* ===== Problems grid ===== */
+  .problems{padding:96px 24px; background:var(--cream);}
+  .pgrid{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:18px;
+    max-width:980px; margin:0 auto;
+  }
+  .pcard{
+    background:var(--paper); border:1px solid var(--line); border-radius:14px;
+    padding:26px 22px;
+  }
+  .pcard .pnum{font-family:'Roboto Mono',monospace; font-size:12px; color:var(--green-deep); font-weight:700; margin-bottom:12px;}
+  .pcard h3{font-size:15.5px; font-weight:700; color:var(--navy); margin-bottom:8px; line-height:1.5;}
+  .pcard p{font-size:13px; color:var(--ink-soft);}
+
+  /* ===== Services ===== */
+  .services{padding:96px 24px; background:var(--paper);}
+  .svc-list{max-width:900px; margin:0 auto; display:flex; flex-direction:column; gap:0;}
+  .svc-row{
+    display:grid; grid-template-columns:64px 1fr; gap:20px;
+    padding:24px 12px; border-bottom:1px solid var(--line);
+    align-items:flex-start;
+  }
+  .svc-row:first-child{border-top:1px solid var(--line);}
+  .svc-icon{
+    width:48px;height:48px;border-radius:11px;
+    background:linear-gradient(160deg, var(--green) 0%, var(--green-deep) 100%);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .svc-icon svg{width:22px;height:22px; stroke:#fff; fill:none; stroke-width:1.8;}
+  .svc-row h3{font-size:16.5px; font-weight:700; color:var(--navy); margin-bottom:5px;}
+  .svc-row p{font-size:13.5px; color:var(--ink-soft);}
+
+  /* ===== Proof / trust ===== */
+  .proof{
+    padding:90px 24px;
+    background:var(--navy);
+    color:#fff;
+  }
+  .proof .section-head h2{color:#fff;}
+  .proof .section-head p{color:rgba(255,255,255,0.55);}
+  .proof-grid{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:16px;
+    max-width:980px; margin:0 auto 56px;
+  }
+  .proof-card{
+    background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12);
+    border-radius:14px; padding:24px 18px; text-align:center;
+  }
+  .proof-card .num{font-size:30px; font-weight:900; color:var(--green);}
+  .proof-card .num .small{font-size:14px;}
+  .proof-card .lbl{font-size:12px; color:rgba(255,255,255,0.6); margin-top:6px;}
+
+  .review-strip{
+    max-width:900px; margin:0 auto;
+    display:grid; grid-template-columns:1fr 1fr; gap:16px;
+  }
+  .review-card{
+    background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1);
+    border-radius:14px; padding:22px;
+  }
+  .review-card .stars{color:var(--amber); font-size:13px; margin-bottom:10px; letter-spacing:1px;}
+  .review-card p{font-size:13.5px; color:rgba(255,255,255,0.82); margin-bottom:12px;}
+  .review-card .who{font-size:12px; color:rgba(255,255,255,0.5);}
+
+  /* ===== Profile ===== */
+  .profile{padding:96px 24px; background:var(--cream);}
+  .profile-card{
+    max-width:780px; margin:0 auto;
+    background:var(--paper); border:1px solid var(--line); border-radius:18px;
+    padding:40px; display:flex; gap:28px; align-items:flex-start; flex-wrap:wrap;
+  }
+  .profile-avatar{
+    width:84px;height:84px;border-radius:50%;flex:none;
+    background:linear-gradient(160deg, var(--navy) 0%, var(--green-deep) 130%);
+    display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:26px;
+  }
+  .profile-body{flex:1; min-width:240px;}
+  .profile-name{font-size:18px; font-weight:700; color:var(--navy); margin-bottom:4px;}
+  .profile-rank{
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:11.5px; font-weight:700; color:var(--green-deep);
+    background:rgba(14,158,109,0.1); padding:4px 11px; border-radius:99px;
+    margin-bottom:16px;
+  }
+  .profile-tags{display:flex; gap:8px; flex-wrap:wrap; margin-top:16px;}
+  .ptag{
+    font-size:12px; color:var(--ink-soft); background:var(--cream);
+    border:1px solid var(--line); padding:6px 13px; border-radius:99px;
+  }
+  .profile-meta{display:flex; gap:28px; margin-top:18px; flex-wrap:wrap;}
+  .profile-meta div .v{font-weight:900; color:var(--navy); font-size:18px;}
+  .profile-meta div .l{font-size:11.5px; color:var(--ink-soft);}
+
+  /* ===== Flow ===== */
+  .flow{padding:96px 24px; background:var(--paper);}
+  .flow-list{
+    max-width:760px; margin:0 auto;
+    display:flex; flex-direction:column;
+  }
+  .flow-step{
+    display:grid; grid-template-columns:40px 1fr; gap:20px;
+    position:relative; padding-bottom:38px;
+  }
+  .flow-step:last-child{padding-bottom:0;}
+  .flow-num{
+    width:40px;height:40px;border-radius:50%;
+    background:var(--navy); color:#fff; font-weight:900; font-size:15px;
+    display:flex;align-items:center;justify-content:center; position:relative; z-index:1;
+  }
+  .flow-step:not(:last-child)::before{
+    content:""; position:absolute; left:19px; top:40px; bottom:0;
+    width:2px; background:var(--line);
+  }
+  .flow-text h3{font-size:15.5px; font-weight:700; color:var(--navy); margin-bottom:5px; padding-top:8px;}
+  .flow-text p{font-size:13.5px; color:var(--ink-soft);}
+
+  /* ===== Pricing / CTA ===== */
+  .pricing{padding:100px 24px; background:linear-gradient(165deg, var(--navy) 0%, var(--navy-deep) 100%); color:#fff; text-align:center;}
+  .price-card{
+    max-width:420px; margin:0 auto; background:rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.15); border-radius:18px; padding:40px 32px;
+  }
+  .price-card .from{font-size:12px; color:rgba(255,255,255,0.55); letter-spacing:0.05em;}
+  .price-card .amount{font-size:46px; font-weight:900; margin:10px 0 4px;}
+  .price-card .amount .yen{font-size:22px; margin-right:4px;}
+  .price-card .tax{font-size:12px; color:rgba(255,255,255,0.5); margin-bottom:24px;}
+  .price-card ul{list-style:none; text-align:left; margin-bottom:28px;}
+  .price-card li{font-size:13.5px; color:rgba(255,255,255,0.78); padding:7px 0; display:flex; gap:9px;}
+  .price-card li svg{flex:none; width:16px; height:16px; stroke:var(--green); margin-top:2px;}
+  .price-note{font-size:12.5px; color:rgba(255,255,255,0.45); margin-top:22px;}
+
+  footer{padding:32px 24px; text-align:center; font-size:12px; color:var(--ink-soft); background:var(--cream);}
+
+  /* reveal animation */
+  .reveal{opacity:0; transform:translateY(16px); transition:opacity 0.7s ease, transform 0.7s ease;}
+  .reveal.in{opacity:1; transform:translateY(0);}
+
+  @media (max-width:760px){
+    .pgrid{grid-template-columns:1fr;}
+    .proof-grid{grid-template-columns:repeat(2,1fr);}
+    .review-strip{grid-template-columns:1fr;}
+    .loop-stage{flex-direction:column;}
+    .loop-arrow{transform:rotate(90deg);}
+    .svc-row{grid-template-columns:44px 1fr;}
+    .profile-card{padding:28px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">Excel<span>×</span>自動化相談室</div>
+    <a href="#cta" class="topbar-cta">無料で相談する</a>
+  </div>
+</div>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="hero-content">
+    <div class="eyebrow"><span class="dot"></span>出品者ランク：プラチナ／評価 5.0（314件）</div>
+    <h1>その<span class="accent">「コピペ」と「繰り返し」</span>、<br>もう人間がやる作業じゃありません。</h1>
+    <p class="lead">シフト作成、給与明細、データ集計、メール送信…毎月・毎週同じ手順を繰り返しているExcel作業を、ボタン1つで終わる仕組みに変えます。相談は無料です。</p>
+
+    <div class="hero-stats">
+      <div class="hstat"><div class="num">366<span class="unit">件</span></div><div class="label">販売実績</div></div>
+      <div class="hstat"><div class="num">5.0<span class="unit">/5</span></div><div class="label">総合評価</div></div>
+      <div class="hstat"><div class="num">577<span class="unit">件</span></div><div class="label">総販売実績</div></div>
+      <div class="hstat"><div class="num">1<span class="unit">日</span></div><div class="label">最速お届け実績</div></div>
+    </div>
+
+    <div class="hero-ctas">
+      <a href="#cta" class="btn btn-primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        無料で見積り相談する
+      </a>
+      <a href="#service" class="btn btn-ghost">できることを見る</a>
+    </div>
+  </div>
+</header>
+
+<!-- SIGNATURE: loop to click -->
+<section class="loop-section">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="section-tag">Before / After</div>
+      <h2>同じ動きの繰り返しを、<br class="mobile-only">1クリックに圧縮する</h2>
+      <p>「コピー → 貼り付け → 確認」を何十回も繰り返す作業。その手順をすべてマクロ（VBA）に置き換えます。</p>
+    </div>
+
+    <div class="loop-stage reveal">
+      <div class="loop-before">
+        <div class="tag">BEFORE - 毎回手作業</div>
+        <div class="repeat-row"><div class="ricon">1</div>データをコピーして別シートへ貼り付け</div>
+        <div class="repeat-row"><div class="ricon">2</div>条件に合う行だけを目で探して抽出</div>
+        <div class="repeat-row"><div class="ricon">3</div>関数を1件ずつ書き直して再集計</div>
+        <div class="repeat-row fading"><div class="ricon">4</div>同じ作業を来週もまた繰り返す…</div>
+      </div>
+
+      <div class="loop-arrow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </div>
+
+      <div class="loop-after">
+        <div class="tag">AFTER - ボタン1つ</div>
+        <div class="click-button">
+          <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        </div>
+        <div class="result-text">マクロ実行 → 数秒で完了</div>
+        <div class="result-sub">実際に「1時間の作業が5秒に」なった事例あり</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROBLEMS -->
+<section class="problems" id="problems">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="section-tag">よくある相談</div>
+      <h2>こんな「面倒」、<br class="mobile-only">心当たりありませんか？</h2>
+    </div>
+    <div class="pgrid reveal">
+      <div class="pcard">
+        <div class="pnum">01</div>
+        <h3>毎月のシフト表作成に半日かかる</h3>
+        <p>希望休や勤務条件を見ながら手作業で組んでいて、毎回同じ悩みに時間を溶かしている。</p>
+      </div>
+      <div class="pcard">
+        <div class="pnum">02</div>
+        <h3>給与明細を1人ずつ手作業で作っている</h3>
+        <p>人数分コピーして数値を直して…ミスがないか確認するだけで一日が終わる。</p>
+      </div>
+      <div class="pcard">
+        <div class="pnum">03</div>
+        <h3>条件に合うデータだけ毎回目で探している</h3>
+        <p>大量のCSVやリストから「ルール違反」「特定条件」のデータを手動で抽出している。</p>
+      </div>
+      <div class="pcard">
+        <div class="pnum">04</div>
+        <h3>誰かが作ったVBAがエラーで動かない</h3>
+        <p>前任者が作ったマクロがブラックボックス化していて、修正できる人がいない。</p>
+      </div>
+      <div class="pcard">
+        <div class="pnum">05</div>
+        <h3>Excelの内容をもとにメールを1件ずつ作る</h3>
+        <p>表の内容をOutlookの文面に転記する作業を、対象者の数だけ繰り返している。</p>
+      </div>
+      <div class="pcard">
+        <div class="pnum">06</div>
+        <h3>在庫・集計の管理が毎回手探り</h3>
+        <p>関数を都度書き直したり、集計のたびに別シートに転記したりして時間がかかる。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section class="services" id="service">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="section-tag">対応内容</div>
+      <h2>Excelに関することは、<br class="mobile-only">何でもまずご相談ください</h2>
+      <p>下記は対応例の一部です。リストにない作業でも、まずは無料相談でお聞かせください。</p>
+    </div>
+
+    <div class="svc-list reveal">
+      <div class="svc-row">
+        <div class="svc-icon"><svg viewBox="0 0 24 24"><path d="M3 4h18v16H3z"/><path d="M3 9h18M9 4v16"/></svg></div>
+        <div><h3>シフト作成の自動化</h3><p>勤務条件や希望休を反映したシフト表を、ボタン操作で自動生成できる仕組みに。</p></div>
+      </div>
+      <div class="svc-row">
+        <div class="svc-icon"><svg viewBox="0 0 24 24"><path d="M4 4h16v4H4zM4 12h16v8H4z"/></svg></div>
+        <div><h3>給与明細の自動作成</h3><p>人数分の明細作成・印刷データ生成をまとめて処理し、手作業をゼロに近づけます。</p></div>
+      </div>
+      <div class="svc-row">
+        <div class="svc-icon"><svg viewBox="0 0 24 24"><path d="M12 3v18M5 9l7-6 7 6M5 15l7 6 7-6"/></svg></div>
+        <div><h3>CSV・データの加工・整理</h3><p>形式の異なるCSVデータの取り込み、整形、転記をまとめて自動処理します。</p></div>
+      </div>
+      <div class="svc-row">
+        <div class="svc-icon"><svg viewBox="0 0 24 24"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg></div>
+        <div><h3>関数・VBAマクロの修正</h3><p>今お使いの関数や、前任者が作ったマクロの不具合修正・機能追加にも対応します。</p></div>
+      </div>
+      <div class="svc-row">
+        <div class="svc-icon"><svg viewBox="0 0 24 24"><path d="M3 8l9 6 9-6M3 8v10h18V8M3 8l9-5 9 5"/></svg></div>
+        <div><h3>Outlookメールの自動作成</h3><p>Excelの内容を元に、宛先ごとのメール文面を自動生成。送信前の確認だけで済みます。</p></div>
+      </div>
+      <div class="svc-row">
+        <div class="svc-icon"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
+        <div><h3>条件抽出・在庫管理</h3><p>特定条件に合うデータの抽出（ルール違反の検出など）や在庫管理表の自動化。</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROOF -->
+<section class="proof">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="section-tag">実績と信頼</div>
+      <h2>数字が語る、依頼者からの信頼</h2>
+      <p>直近3ヶ月の高実績で「プラチナ」認定。本人確認・NDA対応済みで安心して相談できます。</p>
+    </div>
+
+    <div class="proof-grid reveal">
+      <div class="proof-card"><div class="num">5.0</div><div class="lbl">総合評価（314件中）</div></div>
+      <div class="proof-card"><div class="num">307<span class="small">件</span></div><div class="lbl">評価「非常に良かった」</div></div>
+      <div class="proof-card"><div class="num">90<span class="small">%+</span></div><div class="lbl">納品完了率の基準</div></div>
+      <div class="proof-card"><div class="num">1<span class="small">日</span></div><div class="lbl">お届け日数の実績</div></div>
+    </div>
+
+    <div class="review-strip reveal">
+      <div class="review-card">
+        <div class="stars">★★★★★</div>
+        <p>「これまで1時間ほどかかっていた作業が5秒で完結するようにシステム開発してくださいました。本当に感動しました。」</p>
+        <div class="who">㍿Sieg 文野勝利様</div>
+      </div>
+      <div class="review-card">
+        <div class="stars">★★★★★</div>
+        <p>「こちらの要望を丁寧にヒアリングしていただき、細かな仕様変更や追加のお願いにも真摯にご対応いただきました。」</p>
+        <div class="who">かべるね｜給与計算代行様</div>
+      </div>
+      <div class="review-card">
+        <div class="stars">★★★★★</div>
+        <p>「複雑な処理にも関わらず数回のやり取りでこちらが思っている以上の物に仕上げて頂きました。」</p>
+        <div class="who">Goldfinger5様</div>
+      </div>
+      <div class="review-card">
+        <div class="stars">★★★★★</div>
+        <p>「何度も何度も修正していただき、正常に動作することができました。依頼して本当によかったです。」</p>
+        <div class="who">energetic_kusakari様</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROFILE -->
+<section class="profile">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="section-tag">出品者プロフィール</div>
+      <h2>10年以上、現場のExcelと向き合ってきました</h2>
+    </div>
+
+    <div class="profile-card reveal">
+      <div class="profile-avatar">カ</div>
+      <div class="profile-body">
+        <div class="profile-name">カスミ Excel VBA 講師</div>
+        <div class="profile-rank">⬥ 出品者ランク：プラチナ認定</div>
+        <p style="font-size:13.5px; color:var(--ink-soft);">RPAエンジニア（マクロ・VBA）歴10年、事務・一般事務歴8年。現場目線で「本当に使われる」自動化ツールを作ります。Macをご利用の場合は購入前にご相談ください。</p>
+        <div class="profile-tags">
+          <div class="ptag">VBA歴10年</div>
+          <div class="ptag">Excel・PowerPoint・Word</div>
+          <div class="ptag">Googleスプレッドシート</div>
+          <div class="ptag">GAS</div>
+          <div class="ptag">本人確認済み</div>
+          <div class="ptag">NDA対応</div>
+        </div>
+        <div class="profile-meta">
+          <div><div class="v">577</div><div class="l">総販売実績</div></div>
+          <div><div class="v">5.0</div><div class="l">評価</div></div>
+          <div><div class="v">126</div><div class="l">フォロワー</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FLOW -->
+<section class="flow">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="section-tag">ご依頼の流れ</div>
+      <h2>購入前に、まず無料相談から</h2>
+    </div>
+    <div class="flow-list reveal">
+      <div class="flow-step">
+        <div class="flow-num">1</div>
+        <div class="flow-text"><h3>無料で見積り相談</h3><p>今困っている作業内容・ご希望の納期・ご希望価格をお知らせください。</p></div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">2</div>
+        <div class="flow-text"><h3>内容のヒアリングとお見積り</h3><p>実現したい内容を丁寧に確認し、納期と価格をご提案します。</p></div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">3</div>
+        <div class="flow-text"><h3>ご購入・制作開始</h3><p>内容確定後にご購入いただき、ヒアリング内容に沿って制作を進めます。</p></div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">4</div>
+        <div class="flow-text"><h3>納品・動作確認・修正対応</h3><p>納品後も動作確認や仕様変更のご相談に対応します（有料オプションあり）。</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING / CTA -->
+<section class="pricing" id="cta">
+  <div class="section-head reveal" style="margin-bottom:48px;">
+    <div class="section-tag" style="color:var(--green);">料金プラン</div>
+    <h2 style="color:#fff;">まずは無料相談から、お気軽に</h2>
+    <p style="color:rgba(255,255,255,0.6);">繰り返し作業に時間を溶かす日々は、今日で終わりにしましょう。</p>
+  </div>
+
+  <div class="price-card reveal">
+    <div class="from">基本プラン・税抜</div>
+    <div class="amount"><span class="yen">¥</span>3,000<span style="font-size:16px; font-weight:500;">〜</span></div>
+    <div class="tax">※ご相談内容により変動します／要相談</div>
+    <ul>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>事前の無料見積り相談</li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>仕様追加・変更オプション対応</li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>最速お届け実績1日</li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>本人確認・NDA対応済みで安心</li>
+    </ul>
+    <a href="https://coconala.com/services/3069157" class="btn btn-primary" style="width:100%; justify-content:center;">ココナラで無料相談する</a>
+  </div>
+  <p class="price-note">※ご購入の前に、必ず事前のご相談をお願いしております（ご希望納期・ご希望価格をお知らせください）</p>
+</section>
+
+<footer>
+  本紹介ページはココナラ出品サービス「繰り返す面倒なExcel作業自動化！効率化します」の内容をもとに作成しています。<br>
+  最新の価格・実績・レビューは <a href="https://coconala.com/services/3069157" style="text-decoration:underline;">ココナラの公式サービスページ</a> をご確認ください。
+</footer>
+
+<script>
+  const els = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, {threshold:0.15});
+  els.forEach(el=>io.observe(el));
+</script>
+
+</body>
+</html>
